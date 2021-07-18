@@ -1,5 +1,5 @@
 # PetitPotam
-PoC tool to coerce Windows hosts to authenticate to other machines via MS-ESFRPC EfsRpcOpenFileRaw function. This is possible via other protocols and functions as well ;) .
+PoC tool to coerce Windows hosts to authenticate to other machines via MS-EFSRPC EfsRpcOpenFileRaw function. This is possible via other protocols and functions as well ;) .
 
 The tools use the LSARPC named pipe with inteface c681d488-d850-11d0-8c52-00c04fd90f7e because it's more prevalent.
 
