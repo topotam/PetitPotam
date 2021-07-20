@@ -5,6 +5,8 @@ The tools use the LSARPC named pipe with inteface c681d488-d850-11d0-8c52-00c04f
 
 But it's possible to trigger with the EFSRPC named pipe and interface df1941c5-fe89-4e79-bf10-463657acf44d. 
 
+It doesn't need credentials against Domain Controller :D
+
 Disabling the EFS service seems not to mitigate the "feature".
 
 The Python one require Impacket to be installed, the Windows PoC was done on VS 2019 Community.
