@@ -96,7 +96,7 @@ class CoerceAuth():
 
         rpctransport = transport.DCERPCTransportFactory(stringBinding)
         if hasattr(rpctransport, 'set_credentials'):
-            rpctransport.set_credentials(username, password, domain, nthash)
+            rpctransport.set_credentials(username=username, password=password, domain=domain, nthash=nthash)
         dce = rpctransport.get_dce_rpc()
         #dce.set_auth_type(RPC_C_AUTHN_WINNT)
         #dce.set_auth_level(RPC_C_AUTHN_LEVEL_PKT_PRIVACY)
