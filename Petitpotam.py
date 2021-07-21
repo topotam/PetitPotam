@@ -91,7 +91,7 @@ class CoerceAuth():
     
     def connect(self, username, password, domain, nthash, target):
         # Possible to use efsrpc with UUID df1941c5-fe89-4e79-bf10-463657acf44d but less common than lsarpc or samr
-        # Possible to use samr with UUID c681d488-d850-11d0-8c52-00c04fd90f7e
+        # Possible to use samr/lsarpc/netlogon with UUID c681d488-d850-11d0-8c52-00c04fd90f7e
         stringBinding = r'ncacn_np:%s[\PIPE\lsarpc]' % target
         MSRPC_UUID_EFSR = uuidtup_to_bin(('c681d488-d850-11d0-8c52-00c04fd90f7e', '1.0')) # for LSARPC named pipe ;)
 
