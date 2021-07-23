@@ -17,3 +17,4 @@ Inspired by the previous work on MS-RPRN from @tifkin_ & @elad_shamir and others
 MS-EFSRPC - Encrypting File System Remote (EFSRPC) Protocol
 
 https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-efsr/08796ba8-01c8-4872-9221-1000ec2eff31
+![image](https://user-images.githubusercontent.com/20562821/126829486-3c6fa938-6e6c-4c61-ace5-74c99f16bccf.png)
