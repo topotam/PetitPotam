@@ -88,7 +88,7 @@ class CoerceAuth():
                 'MSRPC_UUID_EFSR': ('c681d488-d850-11d0-8c52-00c04fd90f7e', '1.0')
             },
             'efsr': {
-                'stringBinding': r'ncacn_np:%s[\PIPE\efsr]' % target,
+                'stringBinding': r'ncacn_np:%s[\PIPE\efsrpc]' % target,
                 'MSRPC_UUID_EFSR': ('df1941c5-fe89-4e79-bf10-463657acf44d', '1.0')
             },
             'samr': {
