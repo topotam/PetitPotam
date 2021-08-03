@@ -20,5 +20,5 @@ MS-EFSRPC - Encrypting File System Remote (EFSRPC) Protocol
 https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-efsr/08796ba8-01c8-4872-9221-1000ec2eff31
 
 ![image](https://user-images.githubusercontent.com/20562821/126829486-3c6fa938-6e6c-4c61-ace5-74c99f16bccf.png)
-https://pbs.twimg.com/media/E70xYnvWUAE2-OH?format=png&name=small
+![image](https://user-images.githubusercontent.com/20562821/127948979-7cb5a86e-a7b6-4fae-8453-a2d92fa2bc16.png)
 ![image](https://user-images.githubusercontent.com/20562821/127718030-44185c60-ee8b-4fb5-ba97-9858838c3783.png)
