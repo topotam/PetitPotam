@@ -14,6 +14,8 @@ If compilation problem, remember to add Rpcrt4.lib in the linker. Compile in x86
 
 Inspired by the previous work on MS-RPRN from @tifkin_ & @elad_shamir and others SpecterOps guys.
 
+Non MSF workaround but community one : https://twitter.com/gentilkiwi/status/1421947898749669379
+
 MS-EFSRPC - Encrypting File System Remote (EFSRPC) Protocol
 https://docs.microsoft.com/en-us/openspecs/windows_protocols/ms-efsr/08796ba8-01c8-4872-9221-1000ec2eff31
 
