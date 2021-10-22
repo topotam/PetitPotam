@@ -85,7 +85,7 @@ int wmain(int argc, wchar_t** argv, wchar_t** envp)
 		wprintf(L"4: EfsRpcQueryUsersOnFile\n");
 		wprintf(L"5: EfsRpcQueryRecoveryAgents\n");
 		wprintf(L"6: EfsRpcRemoveUsersFromFile\n");
-		wprintf(L"6: EfsRpcAddUsersToFile\n");
+		wprintf(L"7: EfsRpcAddUsersToFile\n");
 	}
 	else
 	{
