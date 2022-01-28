@@ -350,8 +350,8 @@ class CoerceAuth():
             rpctransport.setRemoteHost(targetIp)
 
         dce = rpctransport.get_dce_rpc()
-        #dce.set_auth_type(RPC_C_AUTHN_WINNT)
-        #dce.set_auth_level(RPC_C_AUTHN_LEVEL_PKT_PRIVACY)
+        dce.set_auth_type(RPC_C_AUTHN_WINNT)
+        dce.set_auth_level(RPC_C_AUTHN_LEVEL_PKT_PRIVACY)
         print("[-] Connecting to %s" % binding_params[pipe]['stringBinding'])
         try:
             dce.connect()
