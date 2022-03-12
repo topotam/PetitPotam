@@ -2,7 +2,7 @@
 # 
 # Author: GILLES Lionel aka topotam (@topotam77)
 # 
-# Greetz : grenadine(@Greynardine), skar(@__skar), didakt(@inf0sec1), plissken, pixis(@HackAndDo), shutd0wn(@ _nwodtuhs) et ptete '144.one' :D
+# Greetz : grenadine(@Greynardine), skar(@__skar), didakt(@inf0sec1), plissken, pixis(@HackAndDo)
 # "Most of" the code stolen from dementor.py from @3xocyte ;)
 
 
