@@ -68,6 +68,13 @@ handle_t Bind(wchar_t* target)
 		return(0);
 	}
 
+	RpcStatus = RpcBindingSetAuthInfoW(BindingHandle, (RPC_WSTR)target, RPC_C_AUTHN_LEVEL_PKT_PRIVACY, RPC_C_AUTHN_GSS_NEGOTIATE, NULL, RPC_C_AUTHZ_NONE);
+
+	if (RpcStatus != RPC_S_OK) {
+		wprintf(L"Error in RpcBindingSetAuthInfoW\n");
+		return(0);
+	}
+
 	return(BindingHandle);
 }
 
