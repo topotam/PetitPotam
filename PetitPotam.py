@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # 
-# Author: GILLES Lionel aka topotam (@topotam77) from Deloitte's Red Team 
+# Author: GILLES Lionel aka topotam (@topotam77)
 # 
-# Greetz : grenadine(@Greynardine), skar(@__skar), didakt(@inf0sec1), plissken, pixis(@HackAndDo) my all beloved friends!
+# Greetz : grenadine(@Greynardine), skar(@__skar), didakt(@inf0sec1), plissken, pixis(@HackAndDo) my friends!
 # "Most of" the code stolen from dementor.py from @3xocyte ;)
 
 
