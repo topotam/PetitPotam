@@ -10,7 +10,6 @@ If compilation problem, remember to add Rpcrt4.lib in the linker. Compile in x86
 
 Inspired by the previous work on MS-RPRN from @tifkin_ & @elad_shamir and others SpecterOps guys.
 
-It's a clin d'oeil for my father who died at 94 yrs olds, we should all go and do what we like!! Hacking :D
 Incomplete patch from Microsoft :) https://msrc.microsoft.com/update-guide/vulnerability/CVE-2021-36942
 
 MS-EFSRPC - Encrypting File System Remote (EFSRPC) Protocol
